@@ -6,7 +6,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from socks_behaviours import ColorCirclesSocks
 from tracking_behaviour import YellowRobotTracking
 from mapping_behavour import ColorMapping
-import numpy as np
+
 
 class Camera:
     def __init__(self, socks_behaviour, robot_tracking_behaviour, mapping_behaviour):
@@ -21,7 +21,7 @@ class Camera:
         self.socks_contours = None
         self.robot_cx = None
         self.robot_cy = None
-        self.free_map = None
+        self._free_map = None
 
     def camera_cb(self, msg):
         try:
@@ -32,12 +32,19 @@ class Camera:
 
             self.socks_centers, self.socks_contours = self.socks_behaviour.detect(cv_image)
             self.robot_cx, self.robot_cy = self.robot_tracking_behaviour.track(cv_image)
-            self.free_map = self.mapping_behaviour.map(cv_image)
+            self._free_map = self.mapping_behaviour.map(cv_image)
 
             self.visualiza(cv_image)
 
         except CvBridgeError, e:
             rospy.logerr("CvBridge Error: {0}".format(e))
+
+    def get_robot_sizes(self):
+        return self.robot_tracking_behaviour.get_robot_sizes()
+
+    @property
+    def free_map(self):
+        return self._free_map
 
     def visualiza(self, image):
         copy = image.copy()
@@ -47,8 +54,8 @@ class Camera:
             cv2.drawContours(copy, self.socks_contours, -1, (0, 255, 0), 1)
             for sock in self.socks_centers:
                 copy = cv2.circle(copy, (int(sock[0]), int(sock[1])), 1, (0, 255, 0), 1)
-        if self.free_map is not None:
-            contours, hierarchy = cv2.findContours(self.free_map,
+        if self._free_map is not None:
+            contours, hierarchy = cv2.findContours(self._free_map,
                                                    cv2.RETR_LIST,
                                                    cv2.CHAIN_APPROX_NONE)
             cv2.drawContours(copy, contours, -1, (255, 0, 0), 1)
