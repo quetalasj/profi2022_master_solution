@@ -44,8 +44,11 @@ class RRT(BasePlaner):
         self.distance_function = None
         self.success_radius = 10
 
+    def create_tree(self, start_state):
+        return Tree(tuple(start_state))
+
     def explore(self, start_state, goal_state, N=1000, max_iter_num=15):
-        G = Tree(tuple(start_state))
+        G = self.create_tree(start_state)
         it = 0
         plan = None
         while plan is None:
@@ -73,9 +76,8 @@ class RRT(BasePlaner):
         else:
             return goal_state
 
-
     def steer(self, first_state, second_state):
-        num = max(self.environment.shape[1], self.environment.shape[0])
+        num = max(self.environment.shape[1], self.environment.shape[0]) # TODO: Is this the reason of slow work?
         s_x = np.round(np.linspace(first_state[0], second_state[0], num=num)).astype(int)
         s_y = np.round(np.linspace(first_state[1], second_state[1], num=num)).astype(int)
         steer_states = np.stack((s_x, s_y), axis=1)
@@ -85,6 +87,8 @@ class RRT(BasePlaner):
         nearest_state = tree.find_nearest_to(goal_state, self.distance_function)
         trajectory = self.steer(np.array(nearest_state), goal_state)
         steer_state = check_connectivity(trajectory, self.environment)
+        if steer_state is None:
+            return None
         if self.distance_function(steer_state, goal_state) < self.success_radius:
             print("Plan is Found")
             if np.all(np.array(nearest_state) == np.array(goal_state)):
@@ -113,3 +117,24 @@ class RRT(BasePlaner):
         if plan is not None:
             return np.array(plan)
         return None
+
+
+class RRTMaxSteer(RRT):
+    def __init__(self, max_steer):
+        RRT.__init__(self)
+        self.max_steer = max_steer
+
+    def steer(self, first_state, second_state):
+        # num = max(self.environment.shape[1], self.environment.shape[0])
+        num = 10
+        s_x = np.linspace(first_state[0], second_state[0], num=num)
+        s_y = np.linspace(first_state[1], second_state[1], num=num)
+        ds_x = s_x - s_x[0]
+        ds_y = s_y - s_y[0]
+        distances = np.sqrt(np.sum((ds_x**2, ds_y**2), axis=0))
+        s_x = s_x[distances < self.max_steer]
+        s_y = s_y[distances < self.max_steer]
+
+        steer_states = np.stack((s_x, s_y), axis=1)
+        # print(steer_states)
+        return np.round(steer_states[1:]).astype(int)
