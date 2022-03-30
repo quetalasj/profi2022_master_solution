@@ -42,6 +42,7 @@ class RRT(BasePlaner):
         BasePlaner.__init__(self)
         self.environment = None
         self.distance_function = None
+        self.success_radius = 10
 
     def explore(self, start_state, goal_state, N=1000, max_iter_num=15):
         G = Tree(tuple(start_state))
@@ -84,7 +85,7 @@ class RRT(BasePlaner):
         nearest_state = tree.find_nearest_to(goal_state, self.distance_function)
         trajectory = self.steer(np.array(nearest_state), goal_state)
         steer_state = check_connectivity(trajectory, self.environment)
-        if self.distance_function(steer_state, goal_state) < 1e-3:
+        if self.distance_function(steer_state, goal_state) < self.success_radius:
             print("Plan is Found")
             if np.all(np.array(nearest_state) == np.array(goal_state)):
                 print("Exect  solution")

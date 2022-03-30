@@ -5,10 +5,11 @@ from geometry_msgs.msg import Twist
 
 
 class BaseRobot:
-    def __init__(self, camera, map_builder, path_planner):
+    def __init__(self, camera, map_builder, path_planner, decision_maker):
         self.camera = camera
         self.map_builder = map_builder
         self.path_planner = path_planner
+        self.decision_maker = decision_maker
         self.odometry = None
 
         rospy.init_node('simple_mover', anonymous=True)

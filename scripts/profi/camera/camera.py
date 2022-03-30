@@ -50,10 +50,6 @@ class Camera:
     def get_robot_pose(self):
         return int(round(self.robot_cx)), int(round(self.robot_cy)), int(round(0))
 
-    def get_goal_pose(self):
-        sockn = 1
-        return int(round(self.socks_centers[sockn][0])), int(round(self.socks_centers[sockn][1])), int(round(0))
-
     def get_robot_sizes(self):
         return self.robot_tracking_behaviour.get_robot_sizes()
 
