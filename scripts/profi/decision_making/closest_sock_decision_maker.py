@@ -14,7 +14,6 @@ class ClosestSockDecisionMaker(BaseDecisionMaker):
                     axis=1)
             )
         )
-        closest_sock = 1
         closest_cx, closest_cy = camera.socks_centers[closest_sock]
-        return int(round(closest_cx)), int(round(closest_cy)), int(0)
+        return int(round(closest_cx)), int(round(closest_cy))
 

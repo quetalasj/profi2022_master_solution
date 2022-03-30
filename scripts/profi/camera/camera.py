@@ -48,7 +48,7 @@ class Camera:
             rospy.logerr("CvBridge Error: {0}".format(e))
 
     def get_robot_pose(self):
-        return int(round(self.robot_cx)), int(round(self.robot_cy)), int(round(0))
+        return int(round(self.robot_cx)), int(round(self.robot_cy))
 
     def get_robot_sizes(self):
         return self.robot_tracking_behaviour.get_robot_sizes()
