@@ -75,13 +75,9 @@ class SimpleMover(BaseRobot):
     def move_to_point(self, robot_pose, point):
         v, w = self.motion_controller.move_robot_forward(self.orientation, robot_pose, point)
         distance = self.point_distance(robot_pose, point)
-        if abs(distance) < 1:
+        if abs(distance) < 10:
             return 0, 0
         return v, w
-
-
-    def move_to_goal(self):
-        pass
 
     def move_back(self, robot_pose):
         v, w = -0.1, 0
@@ -90,32 +86,37 @@ class SimpleMover(BaseRobot):
             return 0, 0
         return v, w
 
-
     def prepare_next_round(self):
         if self.new_round:
+            print("round init")
             self.init_states()
             self.new_round = False
 
     def to_rotate_state(self):
+        print("to rotate")
         self.choose_next_path_point = False
         self.rotate_robot = True
 
     def to_move_to_point_state(self):
+        print("to point")
         self.rotate_robot = False
         self.move_robot_to_goal = False
         self.move_robot = True
 
     def to_move_to_goal_state(self):
+        print('to goal')
         self.rotate_robot = False
         self.move_robot_to_goal = True
         self.move_robot = False
 
     def to_choose_point_state(self):
+        print('choose nex point')
         self.move_robot = False
         self.move_robot_to_goal = False
         self.choose_next_path_point = True
 
     def to_move_back_state(self, current_robot_pose):
+        print('to back')
         self.move_back_pose = current_robot_pose
         self.move_robot_to_goal = False
         self.move_robot_back = True
@@ -131,7 +132,7 @@ class SimpleMover(BaseRobot):
                 goal = self.choose_goal(robot_pose, goal)
                 path = self.find_path(robot_pose, goal, path)
                 if self.choose_next_path_point:
-                    current_point_to_follow = self.choose_path_point(path, goal)
+                    current_point_to_follow = tuple(self.choose_path_point(path, goal))
                     point_is_goal = False
                     self.to_rotate_state()
                     if current_point_to_follow == goal:
@@ -151,6 +152,7 @@ class SimpleMover(BaseRobot):
                 elif self.move_robot_to_goal:
                     v, w = self.move_to_point(robot_pose, current_point_to_follow)
                     if self.is_sock_taken:
+                        self.decision_maker.mark_sock_as_taken()
                         self.to_move_back_state(robot_pose)
                 elif self.move_robot_back:
                     v, w = self.move_back(robot_pose)
