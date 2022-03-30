@@ -29,9 +29,9 @@ class YellowRobotTracking(BaseRobotTrackingBehaviour):
     def track(self, image):
         copy = image.copy()
         hsv_image = cv2.cvtColor(copy, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv_image, self.yellow_lower, self.yellow_upper)
+        robot_mask = cv2.inRange(hsv_image, self.yellow_lower, self.yellow_upper)
 
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask,
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(robot_mask,
                                                                                 self.connectivity,
                                                                                 cv2.CV_32S)
 
@@ -39,8 +39,8 @@ class YellowRobotTracking(BaseRobotTrackingBehaviour):
         robot_dx = robot_stats[2]
         robot_dy = robot_stats[3]
         self.robot_delta = max(robot_dx, robot_dy)
-
-        return centroids[1]
+        robot_cx, robot_cy = centroids[1]
+        return robot_cx, robot_cy, robot_mask
 
     def get_robot_sizes(self):
         return self.robot_delta, self.robot_delta

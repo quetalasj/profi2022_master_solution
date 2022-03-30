@@ -28,26 +28,29 @@ class ColorCirclesSocks(BaseSocksBehaviour):
         self.connectivity = 8
 
     def detect(self, image):
+        # TODO: Filter socks which do not have yellow parts near them
         copy = image.copy()
         hsv_image = cv2.cvtColor(copy, cv2.COLOR_BGR2HSV)
-        mask_socks_blue = cv2.inRange(hsv_image, self.blue_lower, self.blue_upper)
+        mask_socks_centers = cv2.inRange(hsv_image, self.blue_lower, self.blue_upper)
         mask_socks_orange = cv2.inRange(hsv_image, self.orange_lower, self.orange_upper)
-        socks_head = cv2.bitwise_and(copy, copy, mask=mask_socks_blue)
-        socks_full = cv2.bitwise_and(copy, copy, mask=(mask_socks_blue | mask_socks_orange))
+        socks_head = cv2.bitwise_and(copy, copy, mask=mask_socks_centers)
+        socks_full = cv2.bitwise_and(copy, copy, mask=(mask_socks_centers | mask_socks_orange))
 
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask_socks_blue,
-                                                                               self.connectivity,
-                                                                               cv2.CV_32S)
-        socks_centers = centroids[1:num_labels]  # 0 is background
-        contours, hierarchy = cv2.findContours(mask_socks_blue | mask_socks_orange,
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
+            mask_socks_centers,
+            self.connectivity,
+            cv2.CV_32S
+        )
+        socks_centers = centroids[1:]  # 0 is background
+        contours, hierarchy = cv2.findContours(mask_socks_centers | mask_socks_orange,
                                                cv2.RETR_EXTERNAL,
                                                cv2.CHAIN_APPROX_SIMPLE)
         good_contours = []
         for cnt in contours:
             if cv2.contourArea(cnt) > 50:
                 good_contours.append(cnt)
-
-        return socks_centers, good_contours
+        num_socks = num_labels - 1
+        return socks_centers, good_contours, mask_socks_centers, stats[1:], num_socks, labels
 
 
         #mask = cv2.inRange(hsv_image, self.blue_lower, self.blue_upper)
