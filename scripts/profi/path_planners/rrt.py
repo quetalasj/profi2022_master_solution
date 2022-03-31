@@ -114,6 +114,10 @@ class RRT(BasePlaner):
 
         print("start planning")
         G, plan, it = self.explore(start_point, goal_point)
+
+        if self.environment[plan[-1][1], plan[-1][0]] > 0:
+            plan = plan[:-1]
+
         if plan is not None:
             return np.array(plan)
         return None

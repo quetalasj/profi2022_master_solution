@@ -12,154 +12,215 @@ from profi.path_smoothers.short_cut_smoother import ShortCutSmoother
 from profi.controllers.visual_controller import VisualController
 
 
-class SimpleMover(BaseRobot):
+class Conditions:
+    point_is_goal = "POINT_IS_GOAL"
+    point_is_not_goal = "POINT_IS_NOT_GOAL"
+    point_in_collision = "POINT_IN_COLLISION"
 
+class States:
+    new_round = "NEW_ROUND"
+    choose_next_sock = "CHOOSE_NEXT_SOCK"
+    find_new_path = "FIND_NEW_PATH"
+    choose_next_path_point = "CHOOSE_NEXT_PATH_POINT"
+    rotation_to_point = "ROTATION_TO_POINT"
+    rotation_to_goal = "ROTATION_TO_GOAL"
+    move_to_point = "MOVE_TO_POINT"
+    move_to_goal = "MOVE_TO_GOAL"
+    move_back = "MOVE_BACK"
+
+    @staticmethod
+    def next_state(state, condition=None):
+        if state == States.new_round:
+            return States.choose_next_sock
+        if state == States.choose_next_sock:
+            return States.find_new_path
+        if state == States.find_new_path:
+            return States.choose_next_path_point
+
+        if state == States.choose_next_path_point and condition == Conditions.point_is_not_goal:
+            return States.rotation_to_point
+        if state == States.choose_next_path_point and condition == Conditions.point_is_goal:
+            return States.rotation_to_goal
+
+        if state == States.rotation_to_point:
+            return States.move_to_point
+        if state == States.rotation_to_goal:
+            return States.move_to_goal
+
+        if (state == States.move_to_point or state == States.move_to_goal) \
+                and (condition == Conditions.point_in_collision):
+            return States.move_back
+
+        if state == States.move_to_point:
+            return States.choose_next_path_point
+
+        if state == States.move_to_goal:
+            return States.move_back
+
+        if state == States.move_back:
+            return States.new_round
+
+        print("Unknown state", state, condition)
+
+
+class CollisionChecker:
+    def __init__(self, distance_f):
+        self.collision_time = None
+        self.first_position = None
+        self.distance_f = distance_f
+
+    def check(self, pos_to_save, second_position, prev_v, time_threshold, distance_thresh):
+        if self.collision_time is None or self.first_position is None:
+            print("START COLLISION TRACKING")
+            self.collision_time = rospy.get_time()
+            self.first_position = pos_to_save
+
+        if (rospy.get_time() - self.collision_time) > time_threshold:
+            distance = self.distance_f(second_position, self.first_position)
+            if distance < distance_thresh and abs(prev_v) > 0:
+                print("!!!COLLISION!!!")
+                print("DISTANCE:")
+                print(distance)
+                print("FIRST")
+                print(self.first_position)
+                print("SECOND")
+                print(second_position)
+                self.reset()
+                return True
+            else:
+                self.reset()
+        return False
+
+    def reset(self):
+        print("RESET COLLISION")
+        self.collision_time = None
+        self.first_position = None
+
+
+class SimpleMover(BaseRobot):
     def __init__(self, camera, map_builder, path_planner, decision_maker, motion_controller):
         BaseRobot.__init__(self, camera, map_builder, path_planner, decision_maker, motion_controller)
-        self.new_round = True
-        self.move_robot_to_goal = None
-        self.choose_next_goal = None
-        self.find_new_path = None
-        self.rotate_robot = None
-        self.move_robot = None
-        self.move_robot_back = None
-        self.current_path_point_i = None
-        self.choose_next_path_point = None
-
-    def init_states(self):
-        self.choose_next_goal = True
-        self.find_new_path = True
-        self.rotate_robot = True
-        self.move_robot = False
-        self.move_robot_to_goal = False
-        self.move_robot_back = False
+        self.state = States.new_round
         self.current_path_point_i = 0
-        self.choose_next_path_point = True
+        self.move_back_pose = None
+
+        self.distance_thresh_goal = 0.05
+        self.time_thresh_goal = 5
+        self.collision_checker = CollisionChecker(self.point_distance)
+
+    def prepare_next_round(self):
+        if self.state == States.new_round:
+            print(self.state)
+            self.current_path_point_i = 0
+            self.move_back_pose = None
+            self.state = States.next_state(self.state)
 
     def check_simulation_ready(self):
         odom_is_ready = self.orientation is not None
         socks_are_ready = self.is_sock_taken is not None
         return odom_is_ready and socks_are_ready
 
-    def choose_goal(self, robot_pose, current_goal):
-        if self.choose_next_goal:
+    def choose_sock(self, robot_pose, current_goal):
+        if self.state == States.choose_next_sock:
+            print(self.state)
             goal_pose = self.decision_maker.get_goal(robot_pose, self.camera)
-            self.choose_next_goal = False
+            self.state = States.next_state(self.state)
             return goal_pose
         return current_goal
 
     def find_path(self, robot_pose, goal_pose, current_path):
-        if self.find_new_path:
+        if self.state == States.find_new_path:
+            print(self.state)
             c_space = self.map_builder.get_state_map(self.camera, robot_pose, goal_pose)
             path = self.path_planner.get_path(robot_pose, goal_pose, c_space)
             self.camera.path_to_plot = path
-            self.find_new_path = False
+            self.state = States.next_state(self.state)
             return path
         return current_path
 
-    def choose_path_point(self, path, goal_point):
-        self.current_path_point_i = self.current_path_point_i + 1
-        if self.current_path_point_i == len(path) - 1:
-            return goal_point
-        return path[self.current_path_point_i]
+    def choose_path_point(self, path, current_point):
+        point_to_follow = current_point
+        if self.state == States.choose_next_path_point:
+            print(self.state)
+            self.current_path_point_i += 1
+            if self.current_path_point_i == len(path) - 1:
+                point_to_follow = path[-1]
+                self.state = States.next_state(self.state, Conditions.point_is_goal)
+            else:
+                point_to_follow = path[self.current_path_point_i]
+                self.state = States.next_state(self.state, Conditions.point_is_not_goal)
+            print("POINT", self.current_path_point_i, "/", len(path)-1)
+        return tuple(point_to_follow)
 
-    def rotate_to_point(self, robot_pose, point):
-        v, w, delta_w = self.motion_controller.rotate_on_place(self.orientation, robot_pose, point)
-        if abs(delta_w) < 0.1:
-            return 0, 0
+    def rotate_robot(self, robot_pose, point, prev_v, prev_w):
+        v, w = prev_v, prev_w
+        if self.state == States.rotation_to_point or self.state == States.rotation_to_goal:
+            print(self.state)
+            v, w, delta_w = self.motion_controller.rotate_on_place(self.orientation, robot_pose, point)
+            if abs(delta_w) < 0.1:
+                self.state = States.next_state(self.state)
+                v, w = 0, 0
         return v, w
 
     def point_distance(self, p1, p2):
-        return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+        return np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
 
-    def move_to_point(self, robot_pose, point):
-        v, w = self.motion_controller.move_robot_forward(self.orientation, robot_pose, point)
-        distance = self.point_distance(robot_pose, point)
-        if abs(distance) < 10:
-            return 0, 0
+    def move_robot(self, robot_pose, point, prev_v, prev_w):
+        v, w = prev_v, prev_w
+        if self.state == States.move_to_point or self.state == States.move_to_goal:
+            v, w = self.motion_controller.move_robot_forward(self.orientation, robot_pose, point)
+            collision_points = (self.odometry_x, self.odometry_y)
+
+            if self.state == States.move_to_point:
+                print(self.state)
+                distance = self.point_distance(robot_pose, point)
+                if abs(distance) < 5:
+                    self.collision_checker.reset()
+                    self.state = States.next_state(self.state)
+                    v, w = 0, 0
+                if self.collision_checker.check(collision_points, collision_points, prev_v, self.time_thresh_goal, self.distance_thresh_goal):
+                    self.decision_maker.mark_sock_as_taken()
+                    self.collision_checker.reset()
+                    self.state = States.next_state(self.state, Conditions.point_in_collision)
+                    v, w = 0, 0
+
+            if self.state == States.move_to_goal:
+                print(self.state)
+                if self.is_sock_taken or self.collision_checker.check(collision_points, collision_points, prev_v, self.time_thresh_goal, self.distance_thresh_goal):
+                    self.decision_maker.mark_sock_as_taken()
+                    self.collision_checker.reset()
+                    self.state = States.next_state(self.state, Conditions.point_in_collision)
+                    v, w = 0, 0
+
+            self.move_back_pose = robot_pose
         return v, w
 
-    def move_back(self, robot_pose):
-        v, w = -0.1, 0
-        distance = self.point_distance(robot_pose, self.move_back_pose)
-        if abs(distance) > 2:
-            return 0, 0
+    def move_robot_back(self, robot_pose, prev_v, prev_w):
+        v, w = prev_v, prev_w
+        if self.state == States.move_back:
+            print(self.state)
+            v, w = -0.1, 0
+            distance = self.point_distance(robot_pose, self.move_back_pose)
+            if abs(distance) > 2:
+                self.state = States.next_state(self.state)
+                v, w = 0, 0
         return v, w
-
-    def prepare_next_round(self):
-        if self.new_round:
-            print("round init")
-            self.init_states()
-            self.new_round = False
-
-    def to_rotate_state(self):
-        print("to rotate")
-        self.choose_next_path_point = False
-        self.rotate_robot = True
-
-    def to_move_to_point_state(self):
-        print("to point")
-        self.rotate_robot = False
-        self.move_robot_to_goal = False
-        self.move_robot = True
-
-    def to_move_to_goal_state(self):
-        print('to goal')
-        self.rotate_robot = False
-        self.move_robot_to_goal = True
-        self.move_robot = False
-
-    def to_choose_point_state(self):
-        print('choose nex point')
-        self.move_robot = False
-        self.move_robot_to_goal = False
-        self.choose_next_path_point = True
-
-    def to_move_back_state(self, current_robot_pose):
-        print('to back')
-        self.move_back_pose = current_robot_pose
-        self.move_robot_to_goal = False
-        self.move_robot_back = True
 
     def algorithm(self):
-        goal = None
+        sock = None
         path = None
-        v, w = 0, 0
+        current_point = None
+        v, w = None, None
         while not rospy.is_shutdown():
             if self.check_simulation_ready():
                 self.prepare_next_round()
                 robot_pose = self.camera.get_robot_pose()
-                goal = self.choose_goal(robot_pose, goal)
-                path = self.find_path(robot_pose, goal, path)
-                if self.choose_next_path_point:
-                    current_point_to_follow = tuple(self.choose_path_point(path, goal))
-                    point_is_goal = False
-                    self.to_rotate_state()
-                    if current_point_to_follow == goal:
-                        point_is_goal = True
-
-                if self.rotate_robot:
-                    v, w = self.rotate_to_point(robot_pose, current_point_to_follow)
-                    if w == 0:
-                        if point_is_goal:
-                            self.to_move_to_goal_state()
-                        else:
-                            self.to_move_to_point_state()
-                elif self.move_robot:
-                    v, w = self.move_to_point(robot_pose, current_point_to_follow)
-                    if v == 0:
-                        self.to_choose_point_state()
-                elif self.move_robot_to_goal:
-                    v, w = self.move_to_point(robot_pose, current_point_to_follow)
-                    if self.is_sock_taken:
-                        self.decision_maker.mark_sock_as_taken()
-                        self.to_move_back_state(robot_pose)
-                elif self.move_robot_back:
-                    v, w = self.move_back(robot_pose)
-                    if v == 0:
-                        self.move_robot_back = False
-                        self.new_round = True
-
+                sock = self.choose_sock(robot_pose, sock)
+                path = self.find_path(robot_pose, sock, path)
+                current_point = self.choose_path_point(path, current_point)
+                v, w = self.rotate_robot(robot_pose, current_point, v, w)
+                v, w = self.move_robot(robot_pose, current_point, v, w)
+                v, w = self.move_robot_back(robot_pose, v, w)
                 self.send_message(v, w)
             self.rate.sleep()
 
@@ -168,6 +229,7 @@ class SimpleMover(BaseRobot):
         twist_msg.linear.x = v
         twist_msg.angular.z = w
         self.cmd_vel_pub.publish(twist_msg)
+
 
 class SimpleMoverFactory:
     @staticmethod

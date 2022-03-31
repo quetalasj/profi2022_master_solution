@@ -28,7 +28,7 @@ class VisualController:
     def rotate_robot(self, robot_orientation, robot_pose, goal_pose, k):
         goal_orientation = self.estimate_goal_orientation(goal_pose, robot_pose)
         delta_w = self.angle_difference_rad(goal_orientation, robot_orientation)
-        print(delta_w)
+        # print(delta_w)
         delta_w_dot = delta_w - self.prev_delta_w
         self.E_rot += delta_w
         w = k * delta_w + self.k_dot * delta_w_dot + self.k_i * self.E_rot

@@ -34,7 +34,7 @@ class YellowRobotTracking(BaseRobotTrackingBehaviour):
         num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(robot_mask,
                                                                                 self.connectivity,
                                                                                 cv2.CV_32S)
-        print("Num robots", num_labels)
+        # print("Num robots", num_labels)
         robot_stats = stats[1]
         robot_dx = robot_stats[2]
         robot_dy = robot_stats[3]

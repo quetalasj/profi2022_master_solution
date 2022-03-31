@@ -12,14 +12,11 @@ class ShortCutSmoother(BaseSmoother):
     def get_path(self, start_point, goal_point, c_space):
         # path includes current pose
         old_path = self.planner.get_path(start_point, goal_point, c_space)
-        x = old_path
         try_to_cut = True
         j = 0
-        while try_to_cut:
+        while j < self.max_steps and try_to_cut:
             j += 1
             print("Smoothing step", j)
-            if j > self.max_steps:
-                break
             try_to_cut = False
             num_vertices = len(old_path)
             new_path = [old_path[0]]
@@ -28,21 +25,26 @@ class ShortCutSmoother(BaseSmoother):
                 point_0 = old_path[i]
                 point_1 = old_path[i + 1]
                 point_2 = old_path[i + 2]
-                connection = self.planner.steer(point_0, point_2)
-                point_x = check_connectivity(connection, c_space)
-                if np.all(point_x == point_2):
+                connection = self.smoother_connect(point_0, point_2)
+                point_x = check_connectivity(np.round(connection).astype(int), c_space)
+                dist = np.sum((point_x - point_2)**2)
+                if dist < 2:
                     new_path.append(point_2)
                     i += 2
                     try_to_cut = True
                 else:
                     new_path.append(point_1)
                     i += 1
-            if np.all(new_path[-1] != old_path[-1]):
+            if np.any(new_path[-1] != old_path[-1]):
                 new_path.append(old_path[-1])
 
             old_path = new_path
 
-        # print("Full path", x)
-        # print("Smoothed path", new_path)
-
         return np.array(new_path)
+
+    def smoother_connect(self, first_state, second_state):
+        num = 100
+        s_x = np.linspace(first_state[0], second_state[0], num=num)
+        s_y = np.linspace(first_state[1], second_state[1], num=num)
+        steer_states = np.stack((s_x, s_y), axis=1)
+        return steer_states[1:]

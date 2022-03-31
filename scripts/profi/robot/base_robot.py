@@ -16,6 +16,8 @@ class BaseRobot:
         self.motion_controller = motion_controller
         self.orientation = None
         self.is_sock_taken = None
+        self.odometry_x = None
+        self.odometry_y = None
 
         rospy.init_node('simple_mover', anonymous=True)
         rospy.on_shutdown(self.shutdown)
@@ -40,9 +42,13 @@ class BaseRobot:
             orientation.w
         ])[2]
         self.orientation = self.cvt_angle_to_atan2(orientation)
+        self.odometry_x = msg.pose.pose.position.x
+        self.odometry_y = msg.pose.pose.position.y
 
     def socks_callback(self, msg):
         self.is_sock_taken = msg.data
+        if self.is_sock_taken:
+            print("Goal is taken")
 
     def spin(self):
         self.algorithm()

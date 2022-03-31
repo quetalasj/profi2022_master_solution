@@ -76,6 +76,7 @@ class Camera:
                                 (self.path_to_plot[i - 1][0], self.path_to_plot[i - 1][1]),
                                 (self.path_to_plot[i][0], self.path_to_plot[i][1]),
                                 (0, 255, 0), 3)
+                copy = cv2.circle(copy, (int(self.path_to_plot[i][0]), int(self.path_to_plot[i][1])), 1, (0, 0, 255), 2)
         cv2.imshow("Robot", copy)
         cv2.waitKey(1)
 
