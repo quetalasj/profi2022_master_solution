@@ -140,8 +140,8 @@ class RRTMaxSteer(RRT):
         self.max_steer = max_steer
 
     def steer(self, first_state, second_state):
-        # num = max(self.environment.shape[1], self.environment.shape[0])
-        num = 10
+        num = max(self.environment.shape[1], self.environment.shape[0])
+        # num = 100
         s_x = np.linspace(first_state[0], second_state[0], num=num)
         s_y = np.linspace(first_state[1], second_state[1], num=num)
         ds_x = s_x - s_x[0]
