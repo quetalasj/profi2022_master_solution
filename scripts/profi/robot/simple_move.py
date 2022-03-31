@@ -13,11 +13,9 @@ from profi.controllers.visual_controller import VisualController
 
 
 class Conditions:
-    normal = 'NORMAL'
     point_is_goal = "POINT_IS_GOAL"
     point_is_not_goal = "POINT_IS_NOT_GOAL"
     point_in_collision = "POINT_IN_COLLISION"
-    path_not_found = "PATH_NOT_FOUND"
 
 class States:
     new_round = "NEW_ROUND"
@@ -31,49 +29,35 @@ class States:
     move_back = "MOVE_BACK"
 
     @staticmethod
-    def compare_normal(state, desired_state, condition):
-        return States.compare(state, desired_state, condition, Conditions.normal)
-
-    @staticmethod
-    def compare(state, desired_state, condition, desired_condition):
-        return state == desired_state and condition == desired_condition
-
-    @staticmethod
-    def compare_or(state, desired_state1, desired_state2, condition, desired_condition):
-        return (state == desired_state1 or state == desired_state2) and condition == desired_condition
-
-    @staticmethod
-    def next_state(state, condition=Conditions.normal):
-        if States.compare_normal(state, States.new_round, condition):
+    def next_state(state, condition=None):
+        if state == States.new_round:
             return States.choose_next_sock
-        if States.compare_normal(state, States.choose_next_sock, condition):
+        if state == States.choose_next_sock:
             return States.find_new_path
-        if States.compare_normal(state, States.find_new_path, condition):
+        if state == States.find_new_path:
             return States.choose_next_path_point
-        if States.compare(state, States.find_new_path, condition, Conditions.path_not_found):
-            return States.choose_next_sock
 
-        if States.compare(state, States.choose_next_path_point, condition, Conditions.point_is_not_goal):
+        if state == States.choose_next_path_point and condition == Conditions.point_is_not_goal:
             return States.rotation_to_point
-        if States.compare(state, States.choose_next_path_point, condition, Conditions.point_is_goal):
+        if state == States.choose_next_path_point and condition == Conditions.point_is_goal:
             return States.rotation_to_goal
 
-        if States.compare_normal(state, States.rotation_to_point, condition):
+        if state == States.rotation_to_point:
             return States.move_to_point
-        if States.compare_normal(state, States.rotation_to_goal, condition):
+        if state == States.rotation_to_goal:
             return States.move_to_goal
 
-        if States.compare_or(state, States.move_to_point, States.move_to_goal,
-                             condition, Conditions.point_in_collision):
+        if (state == States.move_to_point or state == States.move_to_goal) \
+                and (condition == Conditions.point_in_collision):
             return States.move_back
 
-        if States.compare_normal(state, States.move_to_point, condition):
+        if state == States.move_to_point:
             return States.choose_next_path_point
 
-        if States.compare_normal(state, States.move_to_goal, condition):
+        if state == States.move_to_goal:
             return States.move_back
 
-        if States.compare_normal(state, States.move_back, condition):
+        if state == States.move_back:
             return States.new_round
 
         print("Unknown state", state, condition)
@@ -140,7 +124,6 @@ class SimpleMover(BaseRobot):
     def choose_sock(self, robot_pose, current_goal):
         if self.state == States.choose_next_sock:
             print(self.state)
-            self.decision_maker.set_num_socks(self.camera.num_socks)    # TODO: if num_socks == None
             goal_pose = self.decision_maker.get_goal(robot_pose, self.camera)
             self.state = States.next_state(self.state)
             return goal_pose
@@ -151,12 +134,8 @@ class SimpleMover(BaseRobot):
             print(self.state)
             c_space = self.map_builder.get_state_map(self.camera, robot_pose, goal_pose)
             path = self.path_planner.get_path(robot_pose, goal_pose, c_space)
-            if path is None:
-                self.decision_maker.temporary_ignore_sock()
-                self.state = States.next_state(self.state, Conditions.path_not_found)
-            else:
-                self.camera.path_to_plot = path
-                self.state = States.next_state(self.state)
+            self.camera.path_to_plot = path
+            self.state = States.next_state(self.state)
             return path
         return current_path
 
