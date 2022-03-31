@@ -42,30 +42,34 @@ class RRT(BasePlaner):
         BasePlaner.__init__(self)
         self.environment = None
         self.distance_function = None
-        self.success_radius = 10
+        self.success_radius = 20
+        self.max_iter_num = 15
+        self.N = 1000
 
     def create_tree(self, start_state):
         return Tree(tuple(start_state))
 
-    def explore(self, start_state, goal_state, N=1000, max_iter_num=15):
+    def explore(self, start_state, goal_state):
         G = self.create_tree(start_state)
         it = 0
         plan = None
-        while plan is None:
-            it += 1
+        for it in range(self.max_iter_num):
             print(it)
-            if it > max_iter_num:
-                return (None, None, it)  # Didn't find the solution for the desired time, please try again
-            for i in range(N):
+            for i in range(self.N):
                 q_rand = self.sample(np.random.rand(), goal_state)
                 q_near = G.find_nearest_to(q_rand, self.distance_function)
-                discrete_trajectory = self.steer(np.array(q_near), q_rand)
+                if np.all(q_rand == goal_state):
+                    discrete_trajectory = self.steer_long(np.array(q_near), q_rand)
+                else:
+                    discrete_trajectory = self.steer(np.array(q_near), q_rand)
                 q_new = check_connectivity(discrete_trajectory, self.environment)
                 if q_new is None:
                     continue
                 G.add_edge(q_near, tuple(q_new))
 
             plan = self.find_path_to(goal_state, G)
+            if plan is not None:
+                break
         return (G, plan, it)
 
     def sample(self, chance, goal_state):
@@ -75,6 +79,13 @@ class RRT(BasePlaner):
             return x, y
         else:
             return goal_state
+
+    def steer_long(self, first_state, second_state):
+        num = max(self.environment.shape[1], self.environment.shape[0])
+        s_x = np.round(np.linspace(first_state[0], second_state[0], num=num)).astype(int)
+        s_y = np.round(np.linspace(first_state[1], second_state[1], num=num)).astype(int)
+        steer_states = np.stack((s_x, s_y), axis=1)
+        return steer_states[1:]
 
     def steer(self, first_state, second_state):
         num = max(self.environment.shape[1], self.environment.shape[0]) # TODO: Is this the reason of slow work?

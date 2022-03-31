@@ -27,6 +27,9 @@ class ShortCutSmoother(BaseSmoother):
                 point_2 = old_path[i + 2]
                 connection = self.smoother_connect(point_0, point_2)
                 point_x = check_connectivity(np.round(connection).astype(int), c_space)
+                if point_x is None:
+                    i += 1
+                    continue
                 dist = np.sum((point_x - point_2)**2)
                 if dist < 2:
                     new_path.append(point_2)

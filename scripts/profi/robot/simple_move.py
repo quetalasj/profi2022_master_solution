@@ -107,6 +107,7 @@ class SimpleMover(BaseRobot):
         self.distance_thresh_goal = 0.05
         self.time_thresh_goal = 5
         self.collision_checker = CollisionChecker(self.point_distance)
+        self.move_back_distance = 5
 
     def prepare_next_round(self):
         if self.state == States.new_round:
@@ -201,7 +202,7 @@ class SimpleMover(BaseRobot):
             print(self.state)
             v, w = -0.1, 0
             distance = self.point_distance(robot_pose, self.move_back_pose)
-            if abs(distance) > 2:
+            if abs(distance) > self.move_back_distance:
                 self.state = States.next_state(self.state)
                 v, w = 0, 0
         return v, w
@@ -225,6 +226,8 @@ class SimpleMover(BaseRobot):
             self.rate.sleep()
 
     def send_message(self, v, w):
+        print("message")
+        print("v", v, ", w", w)
         twist_msg = Twist()
         twist_msg.linear.x = v
         twist_msg.angular.z = w
