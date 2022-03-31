@@ -43,18 +43,19 @@ class RRT(BasePlaner):
         self.environment = None
         self.distance_function = None
         self.success_radius = 10
-        self.max_iter_num = 15
+        self.max_iter_num = 7  # TODO: 7 or less?
+        self.max_tries = 5
         self.N = 1000
+        self.max_last_path_distance = 6
 
     def create_tree(self, start_state):
         return Tree(tuple(start_state))
 
     def explore(self, start_state, goal_state):
         G = self.create_tree(start_state)
-        it = 0
         plan = None
         for it in range(self.max_iter_num):
-            print(it)
+            print('iteration ' + str(it))
             for i in range(self.N):
                 q_rand = self.sample(np.random.rand(), goal_state)
                 q_near = G.find_nearest_to(q_rand, self.distance_function)
@@ -70,7 +71,7 @@ class RRT(BasePlaner):
             plan = self.find_path_to(goal_state, G)
             if plan is not None:
                 break
-        return (G, plan, it)
+        return G, plan
 
     def sample(self, chance, goal_state):
         if chance < 0.7:
@@ -124,16 +125,20 @@ class RRT(BasePlaner):
         goal_point = (goal_point[0], goal_point[1])
 
         print("start planning")
-        G, plan, it = self.explore(start_point, goal_point)
+        for i in range(self.max_tries):
+            print("Try " + str(i))
+            G, plan = self.explore(start_point, goal_point)
+            if plan is not None:
+                break
+        else:
+            return None
 
         last_distance = self.distance_function(plan[-1], plan[-2])
 
-        if last_distance < 6 and self.environment[plan[-1][1], plan[-1][0]] > 0:
+        if last_distance < self.max_last_path_distance and self.environment[plan[-1][1], plan[-1][0]] > 0:
             plan = plan[:-1]
+        return np.array(plan)
 
-        if plan is not None:
-            return np.array(plan)
-        return None
 
 
 class RRTMaxSteer(RRT):
