@@ -222,8 +222,12 @@ class SimpleMover(BaseRobot):
         if self.state == States.move_back:
             print(self.state)
             v, w = -0.1, 0
+            collision_points = (self.odometry_x, self.odometry_y)
             distance = self.point_distance(robot_pose, self.move_back_pose)
-            if abs(distance) > self.move_back_distance:
+            is_collision = self.collision_checker.check(collision_points, collision_points, prev_v, self.time_thresh_goal,
+                                         self.distance_thresh_goal)
+            if abs(distance) > self.move_back_distance or is_collision:
+                self.collision_checker.reset()
                 self.state = States.next_state(self.state)
                 v, w = 0, 0
         return v, w
