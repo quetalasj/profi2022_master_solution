@@ -141,7 +141,7 @@ class SimpleMover(BaseRobot):
     def choose_sock(self, robot_pose, current_goal):
         if self.state == States.choose_next_sock:
             print(self.state)
-            # self.decision_maker.set_num_socks(self.camera.num_socks)    # TODO: if num_socks == None
+            self.decision_maker.set_num_socks(self.camera.num_socks)    # TODO: if num_socks == None
             goal_pose = self.decision_maker.get_goal(robot_pose, self.camera)
             self.state = States.next_state(self.state)
             return goal_pose
@@ -153,9 +153,8 @@ class SimpleMover(BaseRobot):
             c_space = self.map_builder.get_state_map(self.camera, robot_pose, goal_pose)
             path = self.path_planner.get_path(robot_pose, goal_pose, c_space)
             if path is None:
-                # self.decision_maker.temporary_ignore_sock()
-                # self.state = States.next_state(self.state, Conditions.path_not_found)
-                return current_path
+                self.decision_maker.temporary_ignore_sock()
+                self.state = States.next_state(self.state, Conditions.path_not_found)
             else:
                 self.camera.path_to_plot = path
                 self.state = States.next_state(self.state)
@@ -238,7 +237,7 @@ class SimpleMover(BaseRobot):
         sock = None
         path = None
         current_point = None
-        v, w = 0, 0
+        v, w = None, None
         while not rospy.is_shutdown():
             if self.check_simulation_ready():
                 self.prepare_next_round()
