@@ -6,11 +6,11 @@ class VisualController:
 
     def __init__(self):
         self.v_lin = 0.2
-        self.k_rotation_on_place = 0.2
+        self.k_rotation_on_place = 0.4
         self.k_rotation_dynamic = 0.2
 
         self.k_dot = 0.2
-        self.k_i = 0.0001
+        self.k_i = 0.00001
 
         self.prev_delta_w = 0
         self.E_rot = 0

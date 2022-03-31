@@ -42,7 +42,7 @@ class RRT(BasePlaner):
         BasePlaner.__init__(self)
         self.environment = None
         self.distance_function = None
-        self.success_radius = 20
+        self.success_radius = 10
         self.max_iter_num = 15
         self.N = 1000
 
@@ -126,7 +126,9 @@ class RRT(BasePlaner):
         print("start planning")
         G, plan, it = self.explore(start_point, goal_point)
 
-        if self.environment[plan[-1][1], plan[-1][0]] > 0:
+        last_distance = self.distance_function(plan[-1], plan[-2])
+
+        if last_distance < 6 and self.environment[plan[-1][1], plan[-1][0]] > 0:
             plan = plan[:-1]
 
         if plan is not None:
