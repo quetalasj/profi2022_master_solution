@@ -7,7 +7,6 @@ from base_robot import BaseRobot
 from profi.camera.camera import CameraFactory
 from profi.map_builders.map_builders import ConvolveMapBuilder
 from profi.path_planners.rrt import RRT, RRTMaxSteer
-from profi.path_planners.a_star import AStar
 from profi.decision_making.closest_sock_decision_maker import ClosestSockDecisionMaker
 from profi.path_smoothers.short_cut_smoother import ShortCutSmoother
 from profi.controllers.visual_controller import VisualController
@@ -265,9 +264,8 @@ class SimpleMoverFactory:
     def create():
         camera = CameraFactory.create_camera()
         map_builder = ConvolveMapBuilder()
-        ## path_planner = ShortCutSmoother(RRT())
+        # path_planner = ShortCutSmoother(RRT())
         path_planner = ShortCutSmoother(RRTMaxSteer(max_steer=50))
-        ## path_planner = ShortCutSmoother(AStar())
         decision_maker = ClosestSockDecisionMaker()
         motion_controller = VisualController()
         return SimpleMover(camera, map_builder, path_planner, decision_maker, motion_controller)
