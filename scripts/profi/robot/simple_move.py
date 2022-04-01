@@ -194,7 +194,7 @@ class SimpleMover(BaseRobot):
 
             if self.state == States.move_to_goal:
                 print(self.state)
-                if self.is_sock_taken and self.collision_checker.check(collision_points, collision_points, prev_v, self.time_thresh_goal, self.distance_thresh_goal):
+                if self.is_sock_taken or self.collision_checker.check(collision_points, collision_points, prev_v, self.time_thresh_goal, self.distance_thresh_goal):
                     self.decision_maker.mark_sock_as_taken()
                     self.collision_checker.reset()
                     self.state = States.next_state(self.state, Conditions.point_in_collision)
