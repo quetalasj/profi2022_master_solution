@@ -141,6 +141,7 @@ class SimpleMover(BaseRobot):
                 self.state = States.next_state(self.state, Conditions.path_not_found)
                 return current_path
             self.camera.path_to_plot = path
+            self.camera.full_path_to_plot = self.path_planner.full_path
             self.state = States.next_state(self.state)
             return path
         return current_path

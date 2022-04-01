@@ -16,6 +16,12 @@ class ClosestSockDecisionMaker(BaseDecisionMaker):
             )
         )
         print(closest_sock)
+        if self.next_sock is not None:
+            if self.next_sock == closest_sock:
+                other_sock = self.get_other_sock(closest_sock, len(new_socks_centers))
+                other_cx, other_cy = camera.socks_centers[other_sock]
+                return int(round(other_cx)), int(round(other_cy))
+
         self.next_sock = closest_sock
         closest_cx, closest_cy = camera.socks_centers[closest_sock]
         return int(round(closest_cx)), int(round(closest_cy))
@@ -30,3 +36,12 @@ class ClosestSockDecisionMaker(BaseDecisionMaker):
             new_socks_centers[taken][1] = np.inf
         return new_socks_centers
 
+    def get_other_sock(self, current_sock, num_socks):
+        free_socks = []
+        for sock in range(num_socks):
+            if sock != current_sock and sock not in self.taken_socks:
+                free_socks.append(sock)
+        if len(free_socks) > 0:
+            return free_socks[np.random.randint(0, len(free_socks))]
+        else:
+            return current_sock

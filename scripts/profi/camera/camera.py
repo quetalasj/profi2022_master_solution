@@ -28,6 +28,7 @@ class Camera:
         self.socks_stats = None
         self.num_socks = None
         self.socks_labels = None
+        self.full_path_to_plot = None
 
     def camera_cb(self, msg):
         try:
@@ -61,21 +62,29 @@ class Camera:
         copy = image.copy()
         if self.robot_cx is not None:
             copy = cv2.circle(copy, (int(self.robot_cx), int(self.robot_cy)), 1, (0, 0, 255), 2)
-        if self.socks_contours is not None:
-            cv2.drawContours(copy, self.socks_contours, -1, (0, 255, 0), 1)
-            for sock in self.socks_centers:
-                copy = cv2.circle(copy, (int(sock[0]), int(sock[1])), 1, (0, 255, 0), 1)
-        if self._free_map is not None:
-            contours, hierarchy = cv2.findContours(self._free_map,
-                                                   cv2.RETR_LIST,
-                                                   cv2.CHAIN_APPROX_NONE)
-            cv2.drawContours(copy, contours, -1, (255, 0, 0), 1)
+        # if self.socks_contours is not None:
+        #     cv2.drawContours(copy, self.socks_contours, -1, (0, 255, 0), 1)
+        #     for sock in self.socks_centers:
+        #         copy = cv2.circle(copy, (int(sock[0]), int(sock[1])), 1, (0, 255, 0), 1)
+        # if self._free_map is not None:
+        #     contours, hierarchy = cv2.findContours(self._free_map,
+        #                                            cv2.RETR_LIST,
+        #                                            cv2.CHAIN_APPROX_NONE)
+        #     cv2.drawContours(copy, contours, -1, (255, 0, 0), 1)
+
+        if self.full_path_to_plot is not None:
+            for i in range(1, len(self.full_path_to_plot)):
+                copy = cv2.line(copy,
+                                (self.full_path_to_plot[i - 1][0], self.full_path_to_plot[i - 1][1]),
+                                (self.full_path_to_plot[i][0], self.full_path_to_plot[i][1]),
+                                (255, 0, 0), 3)
+                # copy = cv2.circle(copy, (int(self.path_to_plot[i][0]), int(self.path_to_plot[i][1])), 1, (0, 0, 255), 2)
         if self.path_to_plot is not None:
             for i in range(1, len(self.path_to_plot)):
                 copy = cv2.line(copy,
                                 (self.path_to_plot[i - 1][0], self.path_to_plot[i - 1][1]),
                                 (self.path_to_plot[i][0], self.path_to_plot[i][1]),
-                                (0, 255, 0), 3)
+                                (0, 255, 0), 2)
                 copy = cv2.circle(copy, (int(self.path_to_plot[i][0]), int(self.path_to_plot[i][1])), 1, (0, 0, 255), 2)
         cv2.imshow("Robot", copy)
         cv2.waitKey(1)

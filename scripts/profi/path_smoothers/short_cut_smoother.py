@@ -14,6 +14,7 @@ class ShortCutSmoother(BaseSmoother):
         old_path = self.planner.get_path(start_point, goal_point, c_space)
         if old_path is None:
             return None
+        self.full_path = old_path
         try_to_cut = True
         j = 0
         while j < self.max_steps and try_to_cut:
