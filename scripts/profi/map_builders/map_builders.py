@@ -27,14 +27,23 @@ class ConvolveMapBuilder(BaseMapBuilder):
         self.state_map_width = None
 
     def exclude_goal_sock(self, camera, goal_point):
-        free_map = camera.free_map
+        free_map = camera.free_map.copy()
+        free_map = cv2.dilate(free_map, np.ones((8, 8), 'uint8'))
+        free_map = cv2.erode(free_map, np.ones((12, 12), 'uint8'))
         cv2.imwrite("/workspace/map-with-socks.png", free_map)
         sock_label = 1 + np.argmin(np.abs(camera.socks_centers - np.array([goal_point[0], goal_point[1]])), axis=0)[0]
 
         socks_centers = camera.mask_socks_centers.copy()
         socks_centers[camera.socks_labels != sock_label] = 0
 
-        free_map = free_map + cv2.dilate(socks_centers, np.ones((8, 8), 'uint8'))
+        socks_orange = camera.mask_socks_orange.copy() - cv2.dilate(camera.robot_mask, np.ones((8, 8), 'uint8'))
+        cv2.imwrite("/workspace/socks_orange.png", camera.mask_socks_orange.copy())
+        cv2.imwrite("/workspace/robot.png", camera.robot_mask)
+        cv2.imwrite("/workspace/socks_orange_without_robot.png", socks_orange)
+        dilated_head = cv2.dilate(socks_centers, np.ones((8, 8), 'uint8'))
+        dilated_all_heads = cv2.dilate(camera.mask_socks_centers.copy(), np.ones((8, 8), 'uint8'))
+
+        free_map = free_map + dilated_head - cv2.dilate(socks_orange - dilated_all_heads, np.ones((8, 8), 'uint8'))
         return free_map
 
     def create_state_map(self, camera, start_point, goal_point):

@@ -21,6 +21,7 @@ class Camera:
         self.socks_centers = None
         self.socks_contours = None
         self.mask_socks_centers = None
+        self.mask_socks_orange = None
         self.robot_cx = None
         self.robot_cy = None
         self._free_map = None
@@ -29,6 +30,7 @@ class Camera:
         self.num_socks = None
         self.socks_labels = None
         self.full_path_to_plot = None
+        self.robot_mask = None
 
     def camera_cb(self, msg):
         try:
@@ -37,11 +39,11 @@ class Camera:
                 cv2.imwrite("/workspace/frame-image.png", cv_image)
                 self.save_image = False
 
-            self.socks_centers, self.socks_contours, self.mask_socks_centers, self.socks_stats, self.num_socks, self.socks_labels \
-                = self.socks_behaviour.detect(cv_image)
+            self.socks_centers, self.socks_contours, self.mask_socks_centers, self.socks_stats, self.num_socks, \
+                self.socks_labels, self.mask_socks_orange = self.socks_behaviour.detect(cv_image)
 
-            self.robot_cx, self.robot_cy, robot_mask = self.robot_tracking_behaviour.track(cv_image)
-            self._free_map = self.mapping_behaviour.map(cv_image, robot_mask)
+            self.robot_cx, self.robot_cy, self.robot_mask = self.robot_tracking_behaviour.track(cv_image)
+            self._free_map = self.mapping_behaviour.map(cv_image, self.robot_mask)
 
             self.visualiza(cv_image)
 

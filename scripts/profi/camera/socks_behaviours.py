@@ -50,7 +50,7 @@ class ColorCirclesSocks(BaseSocksBehaviour):
             if cv2.contourArea(cnt) > 50:
                 good_contours.append(cnt)
         num_socks = num_labels - 1
-        return socks_centers, good_contours, mask_socks_centers, stats[1:], num_socks, labels
+        return socks_centers, good_contours, mask_socks_centers, stats[1:], num_socks, labels, mask_socks_orange
 
 
         #mask = cv2.inRange(hsv_image, self.blue_lower, self.blue_upper)

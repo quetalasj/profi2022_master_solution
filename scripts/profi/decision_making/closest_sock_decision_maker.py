@@ -15,13 +15,14 @@ class ClosestSockDecisionMaker(BaseDecisionMaker):
                 np.sum((new_socks_centers - np.array([start_point[0], start_point[1]]))**2, axis=1)
             )
         )
-        print(closest_sock)
+
         if self.next_sock is not None:
             if self.next_sock == closest_sock:
                 other_sock = self.get_other_sock(closest_sock, len(new_socks_centers))
+                print(other_sock)
                 other_cx, other_cy = camera.socks_centers[other_sock]
                 return int(round(other_cx)), int(round(other_cy))
-
+        print(closest_sock)
         self.next_sock = closest_sock
         closest_cx, closest_cy = camera.socks_centers[closest_sock]
         return int(round(closest_cx)), int(round(closest_cy))
