@@ -16,6 +16,7 @@ class Conditions:
     point_is_goal = "POINT_IS_GOAL"
     point_is_not_goal = "POINT_IS_NOT_GOAL"
     point_in_collision = "POINT_IN_COLLISION"
+    path_not_found = "PATH_NOT_FOUND"
 
 class States:
     new_round = "NEW_ROUND"
@@ -34,6 +35,8 @@ class States:
             return States.choose_next_sock
         if state == States.choose_next_sock:
             return States.find_new_path
+        if state == States.find_new_path and condition == Conditions.path_not_found:
+            return States.new_round
         if state == States.find_new_path:
             return States.choose_next_path_point
 
@@ -135,6 +138,7 @@ class SimpleMover(BaseRobot):
             c_space = self.map_builder.get_state_map(self.camera, robot_pose, goal_pose)
             path = self.path_planner.get_path(robot_pose, goal_pose, c_space)
             if path is None:
+                self.state = States.next_state(self.state, Conditions.path_not_found)
                 return current_path
             self.camera.path_to_plot = path
             self.state = States.next_state(self.state)
