@@ -35,6 +35,8 @@ class YellowRobotTracking(BaseRobotTrackingBehaviour):
                                                                                 self.connectivity,
                                                                                 cv2.CV_32S)
         # print("Num robots", num_labels)
+        if num_labels < 2:
+            raise Exception("Camera is Lost")
         robot_stats = stats[1]
         robot_dx = robot_stats[2]
         robot_dy = robot_stats[3]

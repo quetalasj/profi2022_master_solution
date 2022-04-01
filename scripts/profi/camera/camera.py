@@ -44,8 +44,9 @@ class Camera:
 
             self.visualiza(cv_image)
 
-        except CvBridgeError, e:
-            rospy.logerr("CvBridge Error: {0}".format(e))
+        except Exception, e:
+            print("\033[91m" + str(e) + "\033[0m")
+            # rospy.logerr("CvBridge Error: {0}".format(e))
 
     def get_robot_pose(self):
         return int(round(self.robot_cx)), int(round(self.robot_cy))
