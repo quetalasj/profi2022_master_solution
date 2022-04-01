@@ -40,7 +40,7 @@ class YellowRobotTracking(BaseRobotTrackingBehaviour):
         robot_stats = stats[1]
         robot_dx = robot_stats[2]
         robot_dy = robot_stats[3]
-        self.robot_delta = max(robot_dx, robot_dy)
+        self.robot_delta = max(robot_dx, robot_dy, 10)
         robot_cx, robot_cy = centroids[1]
         return robot_cx, robot_cy, robot_mask
 
