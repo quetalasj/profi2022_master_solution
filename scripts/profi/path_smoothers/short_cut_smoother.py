@@ -28,7 +28,7 @@ class ShortCutSmoother(BaseSmoother):
                 point_0 = old_path[i]
                 point_1 = old_path[i + 1]
                 point_2 = old_path[i + 2]
-                connection = self.smoother_connect(point_0, point_2)
+                connection = self.smoother_connect(point_0, point_2, c_space)
                 point_x = check_connectivity(np.round(connection).astype(int), c_space)
                 if point_x is None:
                     i += 1
@@ -48,8 +48,8 @@ class ShortCutSmoother(BaseSmoother):
 
         return np.array(new_path)
 
-    def smoother_connect(self, first_state, second_state):
-        num = 100
+    def smoother_connect(self, first_state, second_state, environment):
+        num = 2*max(environment.shape[1], environment.shape[0])
         s_x = np.linspace(first_state[0], second_state[0], num=num)
         s_y = np.linspace(first_state[1], second_state[1], num=num)
         steer_states = np.stack((s_x, s_y), axis=1)
