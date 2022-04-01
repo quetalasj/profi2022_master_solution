@@ -34,19 +34,22 @@ class Camera:
 
     def camera_cb(self, msg):
         try:
-            cv_image = self.cv_bridge.imgmsg_to_cv2(msg, "bgr8")
-            if self.save_image:
-                cv2.imwrite("/workspace/frame-image.png", cv_image)
-                self.save_image = False
+            try:
+                cv_image = self.cv_bridge.imgmsg_to_cv2(msg, "bgr8")
+                if self.save_image:
+                    cv2.imwrite("/workspace/frame-image.png", cv_image)
+                    self.save_image = False
 
-            self.socks_centers, self.socks_contours, self.mask_socks_centers, self.socks_stats, self.num_socks, \
-                self.socks_labels, self.mask_socks_orange = self.socks_behaviour.detect(cv_image)
+                self.socks_centers, self.socks_contours, self.mask_socks_centers, self.socks_stats, self.num_socks, \
+                    self.socks_labels, self.mask_socks_orange = self.socks_behaviour.detect(cv_image)
 
-            self.robot_cx, self.robot_cy, self.robot_mask = self.robot_tracking_behaviour.track(cv_image)
-            self._free_map = self.mapping_behaviour.map(cv_image, self.robot_mask)
+                self.robot_cx, self.robot_cy, self.robot_mask = self.robot_tracking_behaviour.track(cv_image)
+                self._free_map = self.mapping_behaviour.map(cv_image, self.robot_mask)
 
-            self.visualiza(cv_image)
+                self.visualiza(cv_image)
 
+            except Exception, e:
+                print("\033[91m" + str(e) + "\033[0m")
         except CvBridgeError, e:
             rospy.logerr("CvBridge Error: {0}".format(e))
 
