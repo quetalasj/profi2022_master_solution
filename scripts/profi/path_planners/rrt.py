@@ -43,7 +43,7 @@ class RRT(BasePlaner):
         self.environment = None
         self.distance_function = None
         self.success_radius = 10
-        self.max_iter_num = 15
+        self.max_iter_num = 7
         self.N = 1000
         self.min_last_path_distance = 6
 
@@ -89,7 +89,7 @@ class RRT(BasePlaner):
         return steer_states[1:]
 
     def steer(self, first_state, second_state):
-        num = max(self.environment.shape[1], self.environment.shape[0]) # TODO: Is this the reason of slow work?
+        num = max(self.environment.shape[1], self.environment.shape[0])
         s_x = np.round(np.linspace(first_state[0], second_state[0], num=num)).astype(int)
         s_y = np.round(np.linspace(first_state[1], second_state[1], num=num)).astype(int)
         steer_states = np.stack((s_x, s_y), axis=1)
@@ -127,14 +127,14 @@ class RRT(BasePlaner):
         print("start planning")
         G, plan, it = self.explore(start_point, goal_point)
 
-        last_distance = self.distance_function(plan[-1], plan[-2])
+        if plan is None:
+            return None
 
+        last_distance = self.distance_function(plan[-1], plan[-2])
         if last_distance < self.min_last_path_distance and self.environment[plan[-1][1], plan[-1][0]] > 0:
             plan = plan[:-1]
+        return np.array(plan)
 
-        if plan is not None:
-            return np.array(plan)
-        return None
 
 
 class RRTMaxSteer(RRT):
