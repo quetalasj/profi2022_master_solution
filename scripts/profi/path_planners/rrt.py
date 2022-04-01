@@ -74,7 +74,7 @@ class RRT(BasePlaner):
         return G, plan, it
 
     def sample(self, chance, goal_state):
-        if chance < 0.9:
+        if chance < 0.7:
             y = np.random.randint(0, self.environment.shape[0])
             x = np.random.randint(0, self.environment.shape[1])
             return x, y
