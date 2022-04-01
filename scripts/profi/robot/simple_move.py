@@ -134,6 +134,8 @@ class SimpleMover(BaseRobot):
             print(self.state)
             c_space = self.map_builder.get_state_map(self.camera, robot_pose, goal_pose)
             path = self.path_planner.get_path(robot_pose, goal_pose, c_space)
+            if path is None:
+                return current_path
             self.camera.path_to_plot = path
             self.state = States.next_state(self.state)
             return path
@@ -211,7 +213,7 @@ class SimpleMover(BaseRobot):
         sock = None
         path = None
         current_point = None
-        v, w = None, None
+        v, w = 0, 0
         while not rospy.is_shutdown():
             if self.check_simulation_ready():
                 self.prepare_next_round()

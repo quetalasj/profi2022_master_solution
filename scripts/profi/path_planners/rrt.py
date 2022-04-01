@@ -45,6 +45,7 @@ class RRT(BasePlaner):
         self.success_radius = 10
         self.max_iter_num = 15
         self.N = 1000
+        self.min_last_path_distance = 6
 
     def create_tree(self, start_state):
         return Tree(tuple(start_state))
@@ -54,7 +55,7 @@ class RRT(BasePlaner):
         it = 0
         plan = None
         for it in range(self.max_iter_num):
-            print(it)
+            print('iteration ' + str(it))
             for i in range(self.N):
                 q_rand = self.sample(np.random.rand(), goal_state)
                 q_near = G.find_nearest_to(q_rand, self.distance_function)
@@ -70,7 +71,7 @@ class RRT(BasePlaner):
             plan = self.find_path_to(goal_state, G)
             if plan is not None:
                 break
-        return (G, plan, it)
+        return G, plan, it
 
     def sample(self, chance, goal_state):
         if chance < 0.7:
@@ -128,7 +129,7 @@ class RRT(BasePlaner):
 
         last_distance = self.distance_function(plan[-1], plan[-2])
 
-        if last_distance < 6 and self.environment[plan[-1][1], plan[-1][0]] > 0:
+        if last_distance < self.min_last_path_distance and self.environment[plan[-1][1], plan[-1][0]] > 0:
             plan = plan[:-1]
 
         if plan is not None:
