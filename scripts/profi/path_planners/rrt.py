@@ -43,7 +43,7 @@ class RRT(BasePlaner):
         self.environment = None
         self.distance_function = None
         self.success_radius = 10
-        self.max_iter_num = 7
+        self.max_iter_num = 15
         self.N = 1000
         self.min_last_path_distance = 6
 
